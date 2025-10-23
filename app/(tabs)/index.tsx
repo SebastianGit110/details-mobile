@@ -1,98 +1,282 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState } from "react";
+import {
+  View,
+  TextInput,
+  FlatList,
+  StyleSheet,
+  Text,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
+import { ThemedView } from "@/components/themed-view";
+import { ThemedText } from "@/components/themed-text";
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+interface Cliente {
+  id_cliente: number;
+  nombre: string;
+  direccion: string;
+  telefono: string;
+}
 
-export default function HomeScreen() {
+export default function ClientesScreen() {
+  const [clientes, setClientes] = useState<Cliente[]>([]);
+  const [nombre, setNombre] = useState("");
+  const [direccion, setDireccion] = useState("");
+  const [telefono, setTelefono] = useState("");
+  const [editandoId, setEditandoId] = useState<number | null>(null);
+
+  // 🔹 Agregar o actualizar cliente
+  const agregarCliente = () => {
+    if (!nombre.trim()) {
+      Alert.alert("Error", "El nombre es obligatorio");
+      return;
+    }
+
+    if (editandoId) {
+      // Si se está editando un cliente existente
+      const actualizados = clientes.map((c) =>
+        c.id_cliente === editandoId ? { ...c, nombre, direccion, telefono } : c
+      );
+      setClientes(actualizados);
+      setEditandoId(null);
+      Alert.alert("Éxito", "Cliente actualizado correctamente");
+    } else {
+      // Crear nuevo cliente
+      const nuevoCliente: Cliente = {
+        id_cliente: clientes.length + 1,
+        nombre,
+        direccion,
+        telefono,
+      };
+      setClientes([...clientes, nuevoCliente]);
+      Alert.alert("Éxito", "Cliente agregado correctamente");
+    }
+
+    setNombre("");
+    setDireccion("");
+    setTelefono("");
+  };
+
+  // 🔹 Eliminar cliente
+  const eliminarCliente = (id: number) => {
+    Alert.alert("Confirmar eliminación", "¿Deseas eliminar este cliente?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Eliminar",
+        style: "destructive",
+        onPress: () => {
+          setClientes(clientes.filter((c) => c.id_cliente !== id));
+        },
+      },
+    ]);
+  };
+
+  // 🔹 Editar cliente (rellena formulario)
+  const editarCliente = (cliente: Cliente) => {
+    setNombre(cliente.nombre);
+    setDireccion(cliente.direccion);
+    setTelefono(cliente.telefono);
+    setEditandoId(cliente.id_cliente);
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
+    <ThemedView style={styles.container}>
+      {/* Encabezado */}
+      <View style={styles.header}>
+        <ThemedText type="title" style={styles.title}>
+          Gestión de Clientes
         </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+        <ThemedText type="default">
+          Registra, edita o elimina tus clientes fácilmente.
+        </ThemedText>
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
+      {/* Formulario */}
+      <View style={styles.form}>
+        <TextInput
+          style={styles.input}
+          placeholder="Nombre completo"
+          value={nombre}
+          onChangeText={setNombre}
+          placeholderTextColor="#777"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Dirección"
+          value={direccion}
+          onChangeText={setDireccion}
+          placeholderTextColor="#777"
+        />
+        <TextInput
+          style={styles.input}
+          placeholder="Teléfono"
+          value={telefono}
+          onChangeText={setTelefono}
+          keyboardType="phone-pad"
+          placeholderTextColor="#777"
+        />
+
+        <TouchableOpacity style={styles.button} onPress={agregarCliente}>
+          <Text style={styles.buttonText}>
+            {editandoId ? "Guardar Cambios" : "Agregar Cliente"}
+          </Text>
+        </TouchableOpacity>
+
+        {editandoId && (
+          <TouchableOpacity
+            style={[styles.button, styles.cancelButton]}
+            onPress={() => {
+              setEditandoId(null);
+              setNombre("");
+              setDireccion("");
+              setTelefono("");
+            }}
+          >
+            <Text style={styles.buttonText}>Cancelar Edición</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Lista */}
+      <View style={{ marginTop: 24 }}>
+        <ThemedText type="subtitle" style={styles.subtitle}>
+          Lista de Clientes
         </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+
+        {clientes.length === 0 ? (
+          <Text style={styles.emptyText}>No hay clientes registrados.</Text>
+        ) : (
+          <FlatList
+            data={clientes}
+            keyExtractor={(item) => item.id_cliente.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.clienteCard}>
+                <View style={styles.cardHeader}>
+                  <Text style={styles.clienteNombre}>{item.nombre}</Text>
+                  <View style={styles.actions}>
+                    <TouchableOpacity
+                      onPress={() => editarCliente(item)}
+                      style={[styles.actionBtn, { backgroundColor: "#4CAF50" }]}
+                    >
+                      <Text style={styles.actionText}>Editar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => eliminarCliente(item.id_cliente)}
+                      style={[styles.actionBtn, { backgroundColor: "#FF3B30" }]}
+                    >
+                      <Text style={styles.actionText}>Eliminar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {item.direccion ? (
+                  <Text style={styles.cardText}>📍 {item.direccion}</Text>
+                ) : null}
+                {item.telefono ? (
+                  <Text style={styles.cardText}>📞 {item.telefono}</Text>
+                ) : null}
+              </View>
+            )}
+          />
+        )}
+      </View>
+    </ThemedView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  container: {
+    padding: 20,
+    backgroundColor: "#F6F8FA",
+    flex: 1,
   },
-  stepContainer: {
-    gap: 8,
+  header: {
+    marginBottom: 10,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    marginBottom: 4,
+  },
+  form: {
+    marginTop: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 3,
+    gap: 10,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 10,
+    padding: 12,
+    backgroundColor: "#FAFAFA",
+    fontSize: 16,
+  },
+  button: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 12,
+    borderRadius: 10,
+    alignItems: "center",
+    marginTop: 6,
+  },
+  cancelButton: {
+    backgroundColor: "#6B7280",
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 16,
+  },
+  subtitle: {
+    fontSize: 18,
+    fontWeight: "600",
     marginBottom: 8,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  emptyText: {
+    color: "#777",
+    textAlign: "center",
+    marginTop: 10,
+  },
+  clienteCard: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
+    shadowColor: "#000",
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
+    elevation: 2,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  clienteNombre: {
+    fontSize: 17,
+    fontWeight: "bold",
+    color: "#222",
+  },
+  cardText: {
+    color: "#555",
+    marginTop: 4,
+  },
+  actions: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  actionBtn: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+  },
+  actionText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 13,
   },
 });
