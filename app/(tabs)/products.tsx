@@ -1,26 +1,22 @@
-import React, { useEffect, useState } from "react";
-import { Ionicons, MaterialIcons } from "@expo/vector-icons";
-import {
-  View,
-  TextInput,
-  FlatList,
-  StyleSheet,
-  Text,
-  Alert,
-  TouchableOpacity,
-  Modal,
-  ScrollView,
-  SafeAreaView,
-  Platform,
-} from "react-native";
-import { ThemedView } from "@/components/themed-view";
 import { ThemedText } from "@/components/themed-text";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { getApiUrl } from "@/constants/api";
-import { useResponsive } from "@/hooks/use-responsive";
-import { useThemeColor } from "@/hooks/use-theme-color";
 import { Colors } from "@/constants/theme";
 import { useColorScheme } from "@/hooks/use-color-scheme";
+import { useResponsive } from "@/hooks/use-responsive";
+import { Ionicons, MaterialIcons } from "@expo/vector-icons";
+import React, { useEffect, useState } from "react";
+import {
+  Alert,
+  Modal,
+  Platform,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
+} from "react-native";
 
 interface Producto {
   id_producto: number;
@@ -57,29 +53,40 @@ export default function ProductsScreen() {
       return;
     }
 
-    const nuevoProducto: Producto = {
-      id_producto: Math.floor(Math.random() * 1000000) + 1,
+    const productoData = {
       nombre,
       precio_unitario: parseFloat(precio),
       stock: parseInt(stock) || 0,
     };
 
-    setProductos([...productos, nuevoProducto]);
+    // Limpiar formulario inmediatamente
     setNombre("");
     setPrecio("");
     setStock("");
 
     try {
-      console.log(nuevoProducto);
       const response = await fetch(`${getApiUrl()}/products`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(nuevoProducto),
+        body: JSON.stringify(productoData),
       });
 
-      console.log("RESPUESTA CREAR PRODUCTOS", response);
+      if (!response.ok) {
+        throw new Error("Error al crear el producto");
+      }
+
+      const productoCreado = await response.json();
+      console.log("PRODUCTO CREADO:", productoCreado);
+
+      // Recargar todos los productos para obtener el ID real de la BD
+      const responseList = await fetch(`${getApiUrl()}/products`);
+      const productosActualizados = await responseList.json();
+      setProductos(productosActualizados);
+
+      Alert.alert("Éxito", "Producto agregado correctamente");
     } catch (error) {
-      console.log("ERROR CREAR PRODUCTOS", error);
+      console.error("ERROR CREAR PRODUCTOS", error);
+      Alert.alert("Error", "No se pudo crear el producto");
     }
   };
 
